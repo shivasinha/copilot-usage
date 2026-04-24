@@ -23,13 +23,14 @@ import sqlite3
 import sys
 import threading
 import webbrowser
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import db
 import quota
+import settings as _settings
 from pricing import PRICING_DATE, PRICING_SOURCE_URL, estimate_cost, format_cost
 
 # ---------------------------------------------------------------------------
@@ -66,6 +67,21 @@ def _filter_clause(params):
     return "", []
 
 
+_IST = timezone(timedelta(hours=5, minutes=30))
+
+def _to_ist(ts: str) -> str:
+    """Convert UTC ISO timestamp string to IST (UTC+5:30) 'YYYY-MM-DD HH:MM' string."""
+    if not ts:
+        return ""
+    try:
+        dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(_IST).strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return ts[:16].replace("T", " ")
+
+
 def _query_models(conn):
     cur = conn.execute("""
         SELECT COALESCE(model, 'unknown') AS model
@@ -76,6 +92,15 @@ def _query_models(conn):
     return [row["model"] for row in cur.fetchall()]
 
 
+def _source_clause(source: str):
+    """Return a WHERE fragment and params to filter turns/sessions by data source."""
+    if source == "proxy":
+        return "WHERE session_id LIKE 'proxy-%'", []
+    if source == "jsonl":
+        return "WHERE session_id NOT LIKE 'proxy-%'", []
+    return "", []  # both
+
+
 def _query_all_data(conn):
     """Return all data for client-side filtering.
 
@@ -84,22 +109,26 @@ def _query_all_data(conn):
     round-trips.
     """
     all_models = _query_models(conn)
+    source = _settings.load().get("data_source", "both")
+    src_where, _ = _source_clause(source)
 
     # Daily per-model aggregates (full history — client filters by range)
     cur = conn.execute("""
         SELECT
-            DATE(timestamp)              AS day,
+            DATE(datetime(timestamp, '+5 hours', '30 minutes')) AS day,
             COALESCE(model, 'unknown') AS model,
             SUM(input_tokens)            AS input,
             SUM(output_tokens)           AS output,
             COUNT(*)                     AS turns
         FROM turns
+        {src_where}
         GROUP BY day, model
         ORDER BY day, model
-    """)
+    """.format(src_where=src_where))
     daily_by_model = [dict(row) for row in cur.fetchall()]
 
     # All sessions with server-side cost estimate
+    ses_where = src_where if src_where else ""
     cur = conn.execute("""
         SELECT
             session_id, project_name, model,
@@ -111,8 +140,9 @@ def _query_all_data(conn):
             COALESCE(compaction_count, 0)      AS compaction_count,
             COALESCE(max_context_tokens, 0)    AS max_context_tokens
         FROM sessions
+        {ses_where}
         ORDER BY last_timestamp DESC
-    """)
+    """.format(ses_where=ses_where))
     sessions = []
     for row in cur.fetchall():
         inp = row["total_input_tokens"]  or 0
@@ -130,8 +160,8 @@ def _query_all_data(conn):
             "session_id":        row["session_id"][:8],
             "project":           row["project_name"] or "unknown",
             "model":             row["model"] or "unknown",
-            "last":              (row["last_timestamp"] or "")[:16].replace("T", " "),
-            "last_date":         (row["last_timestamp"] or "")[:10],
+            "last":              _to_ist(row["last_timestamp"] or ""),
+            "last_date":         _to_ist(row["last_timestamp"] or "")[:10],
             "turns":             row["turn_count"]      or 0,
             "input":             inp,
             "output":            out,
@@ -236,6 +266,24 @@ _DASHBOARD_HTML = r"""<!DOCTYPE html>
   #rescan-btn { background: var(--card); border: 1px solid var(--border); color: var(--muted); padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
   #rescan-btn:hover { color: var(--text); border-color: var(--accent); }
   #rescan-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  #settings-btn { background: var(--card); border: 1px solid var(--border); color: var(--muted); padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 14px; line-height: 1; }
+  #settings-btn:hover { color: var(--text); border-color: var(--accent); }
+  /* Settings modal */
+  #settings-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+  #settings-overlay.open { display: flex; }
+  #settings-modal { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 28px 32px; min-width: 340px; max-width: 420px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+  #settings-modal h2 { font-size: 15px; font-weight: 600; margin-bottom: 20px; color: var(--text); }
+  .setting-row { margin-bottom: 18px; }
+  .setting-row label { display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 6px; }
+  .setting-row input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: 6px; font-size: 14px; }
+  .setting-row input:focus { outline: none; border-color: var(--accent); }
+  .setting-row .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 22px; }
+  .modal-actions button { padding: 6px 18px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px; }
+  #settings-cancel { background: transparent; color: var(--muted); }
+  #settings-cancel:hover { color: var(--text); }
+  #settings-save { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  #settings-save:hover { opacity: 0.88; }
   #quota-bar { background: var(--card); border-bottom: 1px solid var(--border); padding: 10px 24px; }
   #quota-inner { max-width: 1400px; margin: 0 auto; }
   .quota-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
@@ -312,8 +360,62 @@ _DASHBOARD_HTML = r"""<!DOCTYPE html>
 <header>
   <h1>&#x1F4CA; GHCP Usage Dashboard</h1>
   <div class="meta" id="meta">Loading&hellip;</div>
-  <button id="rescan-btn" onclick="triggerRescan()" title="Re-scan Copilot logs and refresh">&#x21bb; Rescan</button>
+  <div style="display:flex;gap:6px;align-items:center">
+    <button id="rescan-btn" onclick="triggerRescan()" title="Re-scan Copilot logs and refresh">&#x21bb; Rescan</button>
+    <button id="settings-btn" onclick="openSettings()" title="Settings">&#x2699;&#xFE0F;</button>
+  </div>
 </header>
+<!-- Settings modal -->
+<div id="settings-overlay" onclick="closeSettingsIfOutside(event)">
+  <div id="settings-modal">
+    <h2>&#x2699; Settings</h2>
+    <div class="setting-row">
+      <label>Data Refresh Interval (seconds)</label>
+      <input type="number" id="s-refresh" min="10" max="3600" value="__REFRESH_INTERVAL_S__">
+      <div class="hint">Controls both UI auto-refresh and background JSONL scan. Min 10s.</div>
+    </div>
+    <div class="setting-row">
+      <label>Monthly Premium Request Limit</label>
+      <input type="number" id="s-quota" min="1" max="100000" value="__QUOTA_LIMIT__">
+      <div class="hint">Used for the quota bar percentage. Default is 100 (Copilot Individual/Business).</div>
+    </div>
+    <div class="setting-row">
+      <label>Data Source</label>
+      <select id="s-source" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:14px">
+        <option value="both">Both (proxy + JSONL logs)</option>
+        <option value="proxy">Proxy only (local VS Code, real-time)</option>
+        <option value="jsonl">JSONL logs only (all sessions, accurate tokens)</option>
+      </select>
+      <div class="hint">Controls what data is displayed and whether JSONL scanning runs.</div>
+    </div>
+    <div class="setting-row">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <label style="margin:0">Pricing</label>
+        <div style="display:flex;gap:4px">
+          <button onclick="setPricingTab('url')" id="ptab-url" style="padding:2px 10px;border-radius:4px;border:1px solid var(--border);background:rgba(79,142,247,0.15);color:var(--accent);font-size:11px;cursor:pointer">Source</button>
+          <button onclick="setPricingTab('overrides')" id="ptab-overrides" style="padding:2px 10px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;cursor:pointer">Overrides</button>
+        </div>
+      </div>
+      <!-- Source tab -->
+      <div id="pricing-tab-url">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;font-family:monospace;color:var(--muted);word-break:break-all" id="s-pricing-url-display"></div>
+        <div class="hint">Pricing reference used in the footer. Built-in table last updated <strong>__PRICING_DATE__</strong>. Read-only &mdash; update <code style="color:#79c0ff">src/pricing.py</code> to change rates.</div>
+      </div>
+      <!-- Overrides tab -->
+      <div id="pricing-tab-overrides" style="display:none">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:4px">
+          <button onclick="resetPriceOverrides()" style="padding:2px 9px;border-radius:4px;border:1px solid var(--border);background:transparent;color:var(--red);font-size:11px;cursor:pointer">&#x21BA; Reset to built-in</button>
+        </div>
+        <textarea id="s-price-overrides" rows="5" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:12px;font-family:monospace;resize:vertical" placeholder='{&#10;  "claude-opus": [15.0, 75.0],&#10;  "gpt-4o": [2.50, 10.00]&#10;}'></textarea>
+        <div class="hint">Override per-model prices ($/MTok). Substring-matched. Format: <code style="color:#79c0ff">{"model-key": [input, output]}</code>. Empty = use built-in table.</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button id="settings-cancel" onclick="closeSettings()">Cancel</button>
+      <button id="settings-save" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
 <div id="quota-bar"><div id="quota-inner"><span style="color:var(--muted);font-size:13px">Loading quota&hellip;</span></div></div>
 <div id="filter-bar">
   <div class="filter-label">View</div>
@@ -908,9 +1010,78 @@ async function loadData() {
   } catch(e) { console.error('loadData', e); }
 }
 
+// ── Settings ─────────────────────────────────────────────────────────────────
+function setPricingTab(tab) {
+  const isUrl = tab === 'url';
+  document.getElementById('pricing-tab-url').style.display = isUrl ? '' : 'none';
+  document.getElementById('pricing-tab-overrides').style.display = isUrl ? 'none' : '';
+  document.getElementById('ptab-url').style.background = isUrl ? 'rgba(79,142,247,0.15)' : 'transparent';
+  document.getElementById('ptab-url').style.color = isUrl ? 'var(--accent)' : 'var(--muted)';
+  document.getElementById('ptab-overrides').style.background = isUrl ? 'transparent' : 'rgba(79,142,247,0.15)';
+  document.getElementById('ptab-overrides').style.color = isUrl ? 'var(--muted)' : 'var(--accent)';
+}
+function resetPriceOverrides() {
+  if (!confirm('Clear all price overrides and use the built-in pricing table?')) return;
+  document.getElementById('s-price-overrides').value = '';
+}
+let _refreshInterval = __REFRESH_INTERVAL_MS__;
+let _refreshTimer = setInterval(loadData, _refreshInterval);
+
+function openSettings() {
+  // Populate selects from current server settings
+  fetch('/api/settings').then(r=>r.json()).then(s=>{
+    document.getElementById('s-refresh').value = s.refresh_interval_seconds || __REFRESH_INTERVAL_S__;
+    document.getElementById('s-quota').value   = s.quota_limit || __QUOTA_LIMIT__;
+    document.getElementById('s-source').value  = s.data_source || 'both';
+    document.getElementById('s-pricing-url-display').textContent = s.pricing_source_url || '__PRICING_URL__';
+    const ov = s.price_overrides && Object.keys(s.price_overrides).length ? JSON.stringify(s.price_overrides, null, 2) : '';
+    document.getElementById('s-price-overrides').value = ov;
+    setPricingTab('url');
+  }).catch(()=>{});
+  document.getElementById('settings-overlay').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('open');
+}
+function closeSettingsIfOutside(e) {
+  if (e.target === document.getElementById('settings-overlay')) closeSettings();
+}
+async function saveSettings() {
+  const refresh = parseInt(document.getElementById('s-refresh').value, 10);
+  const quota   = parseInt(document.getElementById('s-quota').value, 10);
+  const source  = document.getElementById('s-source').value;
+  const pricingUrl = '';  // read-only — not editable from UI
+  let priceOverrides = {};
+  const rawOverrides = document.getElementById('s-price-overrides').value.trim();
+  if (rawOverrides) {
+    try { priceOverrides = JSON.parse(rawOverrides); }
+    catch(e) { alert('Price Overrides is not valid JSON: ' + e.message); return; }
+  }
+  if (isNaN(refresh) || refresh < 10 || isNaN(quota) || quota < 1) {
+    alert('Invalid values. Refresh must be \u226510s, quota must be \u22651.'); return;
+  }
+  const btn = document.getElementById('settings-save');
+  btn.textContent = 'Saving\u2026'; btn.disabled = true;
+  try {
+    const r = await fetch('/api/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({refresh_interval_seconds: refresh, quota_limit: quota, data_source: source, pricing_source_url: pricingUrl, price_overrides: priceOverrides})
+    });
+    if (!r.ok) throw new Error('Server error');
+    // Restart interval with new value
+    clearInterval(_refreshTimer);
+    _refreshInterval = refresh * 1000;
+    _refreshTimer = setInterval(loadData, _refreshInterval);
+    closeSettings();
+    await loadQuota();
+    await loadData();
+  } catch(e) { alert('Failed to save settings: ' + e.message); }
+  finally { btn.textContent = 'Save'; btn.disabled = false; }
+}
+
 loadData();
 loadQuota();
-setInterval(loadData, 30000);
 </script>
 </body>
 </html>"""
@@ -919,10 +1090,14 @@ setInterval(loadData, 30000);
 def _build_dashboard_html():
     """Inject server-side values into the dashboard template."""
     from pricing import PRICING_DATE, PRICING_SOURCE_URL
+    s = _settings.load()
     html = _DASHBOARD_HTML
     html = html.replace("__PRICING_DATE__", PRICING_DATE)
-    html = html.replace("__PRICING_URL__", PRICING_SOURCE_URL)
+    html = html.replace("__PRICING_URL__", s.get("pricing_source_url") or PRICING_SOURCE_URL)
     html = html.replace("__DEFAULT_QUOTA__", str(quota._DEFAULT_QUOTA))
+    html = html.replace("__REFRESH_INTERVAL_MS__", str(s["refresh_interval_seconds"] * 1000))
+    html = html.replace("__REFRESH_INTERVAL_S__", str(s["refresh_interval_seconds"]))
+    html = html.replace("__QUOTA_LIMIT__", str(s["quota_limit"]))
     return html
 
 
@@ -1004,6 +1179,9 @@ class _Handler(BaseHTTPRequestHandler):
                     filename  = _csv_filename(params)
                     self._send_csv(csv_bytes, filename)
 
+                elif path == "/api/settings":
+                    self._send_json(_settings.load())
+
                 else:
                     self._send_error_json(404, "Not found")
         except sqlite3.OperationalError as exc:
@@ -1012,8 +1190,17 @@ class _Handler(BaseHTTPRequestHandler):
             conn.close()
 
     def do_POST(self):
-        """Handle POST /api/rescan — trigger an incremental log scan."""
+        """Handle POST /api/rescan or /api/settings."""
         parsed = urlparse(self.path)
+        if parsed.path == "/api/settings":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                body = json.loads(self.rfile.read(length).decode("utf-8"))
+                saved = _settings.save(body)
+                self._send_json(saved)
+            except Exception as exc:
+                self._send_error_json(400, str(exc))
+            return
         if parsed.path != "/api/rescan":
             self._send_error_json(404, "Not found")
             return
@@ -1070,6 +1257,25 @@ def run(db_path=None):
     server = HTTPServer((host, port), _Handler)
     url = "http://{}:{}".format(host, port)
     print("Dashboard available at {}".format(url))
+
+    def _bg_scan():
+        """Periodically scan JSONL logs — interval read from settings each cycle."""
+        import time
+        import scanner as _scanner
+        while True:
+            s = _settings.load()
+            interval = s.get("refresh_interval_seconds", 30)
+            time.sleep(interval)
+            if s.get("data_source", "both") == "proxy":
+                continue  # JSONL scanning disabled
+            try:
+                log_dir = _scanner.get_default_log_dir()
+                if log_dir and log_dir.exists():
+                    _scanner.scan(log_dir)
+            except Exception:
+                pass
+
+    threading.Thread(target=_bg_scan, daemon=True).start()
 
     def _open_browser():
         import time

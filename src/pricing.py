@@ -104,10 +104,11 @@ def get_model_multiplier(model_name):
     return 1.0
 
 
-def _match_pricing(model_name):
+def _match_pricing(model_name, overrides=None):
     """Return pricing tuple for *model_name* or None if unrecognised.
 
     Matching order:
+    0. User overrides from settings (exact lower-case key → [input, output])
     1. Exact lower-case match
     2. Any pricing key that appears as a substring of the model name
     3. Family heuristics (gpt-4o-mini before gpt-4o, o3-mini before o3, etc.)
@@ -115,6 +116,12 @@ def _match_pricing(model_name):
     if not model_name:
         return None
     lower = model_name.lower()
+
+    # 0. User overrides
+    if overrides:
+        for ok, ov in overrides.items():
+            if ok.lower() in lower:
+                return (float(ov[0]), float(ov[1]), 0.0, 0.0)
 
     # 1. Exact match
     if lower in PRICING_TABLE:
@@ -160,9 +167,15 @@ def estimate_cost(model_name, input_tokens, output_tokens,
     """Return estimated cost in USD (float), or None if model is unrecognised.
 
     Uses separate per-MTok rates for input, output, cache read, and cache
-    creation tokens (NFR-07-B).
+    creation tokens (NFR-07-B). Checks user price overrides first.
     """
-    prices = _match_pricing(model_name)
+    overrides = {}
+    try:
+        import settings as _settings
+        overrides = _settings.load().get("price_overrides") or {}
+    except Exception:
+        pass
+    prices = _match_pricing(model_name, overrides)
     if prices is None:
         return None
     inp_price, out_price, cr_price, cc_price = prices
