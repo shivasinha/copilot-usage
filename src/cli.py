@@ -267,6 +267,14 @@ def cmd_stats(args):
 
 def cmd_dashboard(args):
     """Implements: python src/cli.py dashboard"""
+    # Initial JSONL scan so dashboard opens with fresh data
+    log_dir = _scanner.get_default_log_dir()
+    if log_dir and log_dir.exists():
+        try:
+            result = _scanner.scan(log_dir)
+            print("Initial scan: {} new records from JSONL logs.".format(result.get("new_records", 0)))
+        except Exception as exc:
+            print("Warning: initial scan failed: {}".format(exc), file=sys.stderr)
     import dashboard
     dashboard.run()
 

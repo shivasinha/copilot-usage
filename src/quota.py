@@ -16,7 +16,10 @@ _DEFAULT_QUOTA = 100
 
 
 def get_quota_limit():
-    """Return the configured monthly quota limit (GHCP_QUOTA env var or _DEFAULT_QUOTA)."""
+    """Return the configured monthly quota limit.
+
+    Priority: GHCP_QUOTA env var → settings.json → _DEFAULT_QUOTA.
+    """
     raw = os.environ.get("GHCP_QUOTA", "")
     if raw:
         try:
@@ -25,6 +28,11 @@ def get_quota_limit():
                 return val
         except ValueError:
             pass
+    try:
+        import settings as _settings
+        return _settings.load()["quota_limit"]
+    except Exception:
+        pass
     return _DEFAULT_QUOTA
 
 
