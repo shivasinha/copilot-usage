@@ -5,3 +5,9 @@ __pycache__/
 *.db-wal
 .env
 *.log
+
+# Machine-specific proxy setup — not part of the repo
+proxy_poc.py
+proxy_captures.jsonl
+setup-proxy-global.ps1
+start-proxy.ps1
