@@ -1,8 +1,136 @@
-# GHCP Usage Dashboard
+# GHCP Usage Dashboard — Quick Start
 
 ## Overview
 
-A local dashboard for tracking your VS Code GitHub Copilot usage — completions, chat sessions, agent interactions, token counts, model breakdowns, and estimated costs. Inspired by [claude-usage](https://github.com/phuryn/claude-usage). Works on Copilot Individual, Business, and Enterprise plans.
+A local dashboard for tracking your VS Code GitHub Copilot usage — chat sessions, token counts, model breakdowns, premium request quota, and estimated costs. Zero dependencies, zero telemetry, everything stays on your machine.
+
+---
+
+## Prerequisites
+
+- **Python 3.8+** (no pip packages required)
+- **VS Code** with GitHub Copilot extension installed and active
+- A web browser (Chrome, Firefox, Edge, Safari)
+
+---
+
+## Installation
+
+```bash
+git clone <repo-url>
+cd ghcp-usage
+```
+
+That's it. No build step, no virtual environment, no dependencies.
+
+---
+
+## Usage
+
+### Windows (PowerShell)
+```powershell
+python src/cli.py dashboard
+```
+
+### macOS / Linux
+```bash
+python3 src/cli.py dashboard
+```
+
+This will:
+1. Scan your local VS Code Copilot log files
+2. Build a SQLite database at `~/.ghcp-usage/usage.db`
+3. Open your browser at `http://localhost:8080`
+
+### Other commands
+```bash
+python src/cli.py scan             # Incremental scan only (no browser)
+python src/cli.py today            # Today's usage by model in terminal
+python src/cli.py stats            # All-time aggregates by model in terminal
+python src/cli.py scan --reset     # Wipe DB and re-scan from scratch
+```
+
+### Custom host / port
+```powershell
+$env:PORT = "9000"; python src/cli.py dashboard   # Windows PowerShell
+```
+```bash
+PORT=9000 python3 src/cli.py dashboard            # macOS / Linux
+```
+
+---
+
+## How Data Is Captured
+
+Two sources run in parallel and are automatically deduplicated:
+
+**JSONL Scanner (default, always on)**
+- Reads VS Code's `workspaceStorage/<id>/chatSessions/*.jsonl` log files
+- Covers all sessions including SSH remote connections
+- Accurate token counts for all models
+- Scans on startup and every 30 seconds in the background
+
+**mitmproxy (optional, local VS Code only)**
+- Intercepts live HTTPS calls to the Copilot API
+- Real-time capture (no waiting for log files)
+- Requires separate setup (see `setup-proxy-global.ps1`)
+- Useful when log files are unavailable or for immediate capture
+
+---
+
+## Project Structure
+
+```
+ghcp-usage/
+├── src/
+│   ├── cli.py          # CLI entry point
+│   ├── scanner.py      # VS Code JSONL log parser
+│   ├── dashboard.py    # HTTP server + single-page dashboard
+│   ├── db.py           # SQLite schema and connection management
+│   ├── pricing.py      # Per-model API cost estimates
+│   ├── quota.py        # Monthly premium request quota tracking
+│   └── settings.py     # Persistent settings (~/.ghcp-usage/settings.json)
+├── docs/               # Product requirements, architecture, data model
+├── .github/            # Copilot agents and workspace instructions
+└── Readme.md
+```
+
+Database location: `~/.ghcp-usage/usage.db`
+
+---
+
+## Dashboard Settings
+
+Click the **⚙** gear icon in the top-right header. Settings persist across restarts.
+
+| Setting | Default | Notes |
+|---------|---------|-------|
+| Data Refresh Interval | 30s | Controls UI auto-refresh and background scan rate. Min 10s. |
+| Monthly Premium Request Limit | 100 | Base for quota bar %. Copilot Individual/Business default. |
+| Data Source | Both | `Both` = proxy + JSONL; `JSONL only` = local logs; `Proxy only` = live interception |
+| Price Overrides | — | JSON map of model substrings to `[input $/MTok, output $/MTok]` |
+
+---
+
+## Timezone
+
+All timestamps and daily chart groupings use **IST (UTC+5:30)**.
+
+---
+
+## Privacy
+
+All data stays on your machine. The tool reads local VS Code log files and writes to a local SQLite database. Nothing is sent to GitHub, OpenAI, Anthropic, or any external service.
+
+---
+
+## Key Implementation Rules
+
+- Zero runtime dependencies — Python stdlib only
+- All SQL queries use parameterised placeholders
+- All dynamic HTML uses `esc()` to prevent XSS
+- Deduplication via `UNIQUE INDEX` on `message_id` — proxy and JSONL data never double-count
+
 
 ## Quick Start / Getting Started
 

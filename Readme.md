@@ -1,16 +1,111 @@
 # GHCP Usage Dashboard
 
-A local, privacy-first dashboard for tracking your **VS Code GitHub Copilot** usage — chat sessions, agent interactions, token counts, model breakdowns, and estimated costs.
+A local, privacy-first dashboard for tracking your **VS Code GitHub Copilot** usage — chat sessions, token counts, model breakdowns, premium request quota, and estimated costs.
 
 No `pip install`. No cloud sync. No telemetry. Everything stays on your machine.
 
 ```bash
-git clone https://github.com/youruser/ghcp-usage
+git clone <repo-url>
 cd ghcp-usage
 python src/cli.py dashboard
 ```
 
-This will scan your local Copilot logs, build a SQLite database, and open your browser to `http://localhost:8080`.
+Opens your browser at `http://localhost:8080`.
+
+---
+
+## How It Works
+
+Data is captured from **two complementary sources**, automatically combined with no double-counting:
+
+| Source | What it captures | Best for |
+|--------|-----------------|----------|
+| **JSONL scanner** | Reads VS Code's local log files — all sessions including SSH remote, accurate token counts, project names | Default; works everywhere |
+| **mitmproxy** (optional) | Intercepts live HTTPS API calls — real-time, no log files needed | Local VS Code only; requires extra setup |
+
+The scanner runs on startup and every 30 seconds (configurable). The two sources share the same DB and are deduplicated by request ID.
+
+---
+
+## Requirements
+
+- **Python 3.8+** — no pip packages required
+- **VS Code** with GitHub Copilot extension installed and active
+- A web browser
+
+---
+
+## CLI Commands
+
+```bash
+python src/cli.py dashboard        # Scan logs + open browser dashboard
+python src/cli.py scan             # Incremental log scan only
+python src/cli.py today            # Today's usage by model (terminal)
+python src/cli.py stats            # All-time aggregates by model (terminal)
+
+python src/cli.py scan --reset     # Delete DB and re-scan from scratch
+python src/cli.py scan --logs-dir /path/to/logs   # Custom log directory
+```
+
+---
+
+## Dashboard Features
+
+- **Stat cards** — sessions, turns, premium requests, input/output tokens, estimated cost
+- **Date range / Monthly toggle** — 7d / 30d / 90d / All Time or month-by-month navigation
+- **Model filter** — multi-select checkboxes
+- **Daily turns chart** — stacked bar by model (IST timezone)
+- **Cost by model table** — turns, tokens, estimated API cost
+- **Recent sessions table** — sortable, shows project, model, last active time (IST)
+- **CSV export** — filtered session and aggregate data
+- **Settings panel** (⚙ gear icon) — configure refresh interval, quota limit, data source, price overrides
+
+---
+
+## Settings
+
+Click the **⚙** button in the top-right of the dashboard. Settings are saved to `~/.ghcp-usage/settings.json`.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Data Refresh Interval | 30s | UI auto-refresh + JSONL background scan frequency |
+| Monthly Premium Request Limit | 100 | Quota bar percentage base |
+| Data Source | Both | `Both` / `Proxy only` / `JSONL only` |
+| Price Overrides | — | Per-model price overrides in JSON (`{"claude-opus": [15.0, 75.0]}`) |
+
+---
+
+## Project Structure
+
+```
+ghcp-usage/
+├── src/
+│   ├── cli.py          # Entry point — scan, today, stats, dashboard commands
+│   ├── scanner.py      # VS Code JSONL log discovery and parsing
+│   ├── dashboard.py    # HTTP server + embedded single-page dashboard
+│   ├── db.py           # SQLite schema and connection management
+│   ├── pricing.py      # Per-model API cost estimates
+│   ├── quota.py        # Monthly premium request quota tracking
+│   └── settings.py     # Persistent user settings (~/.ghcp-usage/settings.json)
+├── docs/               # Product requirements and architecture docs
+├── .github/            # Copilot agents and instructions
+└── Readme.md
+```
+
+Database: `~/.ghcp-usage/usage.db` (auto-created on first scan).
+
+---
+
+## Timezone
+
+All timestamps are displayed in **IST (UTC+5:30)**. Daily chart grouping also uses IST day boundaries.
+
+---
+
+## Privacy
+
+All data stays local. The tool reads VS Code Copilot log files and writes to a local SQLite file. No data is sent anywhere.
+
 
 ---
 
