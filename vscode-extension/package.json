@@ -2,7 +2,7 @@
   "name": "ghcp-usage-dashboard",
   "displayName": "GHCP Usage Dashboard",
   "description": "Open your GitHub Copilot usage dashboard directly from VS Code.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "icon": "icon.png",
   "publisher": "shiva-sinha",
   "author": "Shiva",
