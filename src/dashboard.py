@@ -92,11 +92,7 @@ def _query_models(conn):
 
 def _source_clause(source: str):
     """Return a WHERE fragment and params to filter turns/sessions by data source."""
-    if source == "proxy":
-        return "WHERE session_id LIKE 'proxy-%'", []
-    if source == "jsonl":
-        return "WHERE session_id NOT LIKE 'proxy-%'", []
-    return "", []  # both
+    return "", []  # single source now (JSONL watcher)
 
 
 def _query_all_data(conn):
@@ -381,11 +377,10 @@ _DASHBOARD_HTML = r"""<!DOCTYPE html>
     <div class="setting-row">
       <label>Data Source</label>
       <select id="s-source" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:14px">
-        <option value="both">Both (proxy + JSONL logs)</option>
-        <option value="proxy">Proxy only (local VS Code, real-time)</option>
-        <option value="jsonl">JSONL logs only (all sessions, accurate tokens)</option>
+        <option value="both">All sessions</option>
+        <option value="jsonl">JSONL logs only</option>
       </select>
-      <div class="hint">Controls what data is displayed and whether JSONL scanning runs.</div>
+      <div class="hint">Controls which sessions are shown. Default shows all.</div>
     </div>
     <div class="setting-row">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -1276,21 +1271,36 @@ def run(db_path=None):
     print("Dashboard available at {}".format(url))
 
     def _bg_scan():
-        """Periodically scan JSONL logs â€” interval read from settings each cycle."""
+        """Background scan: watch for JSONL changes + periodic fallback."""
         import time
         import scanner as _scanner
-        while True:
-            s = _settings.load()
-            interval = s.get("refresh_interval_seconds", 30)
-            time.sleep(interval)
-            if s.get("data_source", "both") == "proxy":
-                continue  # JSONL scanning disabled
+        import watcher as _watcher
+
+        def _do_scan():
             try:
                 log_dir = _scanner.get_default_log_dir()
                 if log_dir and log_dir.exists():
                     _scanner.scan(log_dir)
             except Exception:
                 pass
+
+        # Initial scan on startup
+        _do_scan()
+
+        # Start file-system watcher for near-real-time updates (1-3s latency)
+        try:
+            log_dir = _scanner.get_default_log_dir()
+            if log_dir and log_dir.exists():
+                _watcher.start_watching(log_dir, _do_scan, debounce_seconds=2.0)
+        except Exception:
+            pass
+
+        # Periodic fallback scan at the configured interval
+        while True:
+            s = _settings.load()
+            interval = s.get("refresh_interval_seconds", 30)
+            time.sleep(interval)
+            _do_scan()
 
     threading.Thread(target=_bg_scan, daemon=True).start()
 
