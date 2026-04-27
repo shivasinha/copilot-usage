@@ -14,7 +14,7 @@ _SETTINGS_PATH = Path(os.path.expanduser("~/.ghcp-usage/settings.json"))
 DEFAULTS = {
     "refresh_interval_seconds": 30,
     "quota_limit": 100,
-    "data_source": "both",   # "both" | "proxy" | "jsonl"
+    "data_source": "both",   # "both" | "jsonl"
     "pricing_source_url": "https://platform.openai.com/docs/pricing",
     "price_overrides": {},   # {"model-key": [input_$/MTok, output_$/MTok]}
 }
@@ -27,7 +27,7 @@ _BOUNDS = {
     "price_overrides": None,
 }
 
-_VALID_DATA_SOURCES = {"both", "proxy", "jsonl"}
+_VALID_DATA_SOURCES = {"both", "jsonl"}
 
 
 def load() -> dict:

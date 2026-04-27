@@ -18,7 +18,7 @@ Opens your browser at `http://localhost:8080`.
 
 The scanner reads VS Code's local Copilot log files (`workspaceStorage/<id>/chatSessions/*.jsonl`), parses each chat turn, and stores results in a local SQLite database. The dashboard is served on `localhost` and reads from that database.
 
-The scanner runs automatically on startup and re-runs every 30 seconds (configurable). Re-runs are incremental - only new or changed files are processed.
+The scanner runs automatically on startup and re-scans every 30 seconds (configurable). It also uses a **file-system watcher** to detect new JSONL entries within 1–3 seconds of each Copilot response. Re-runs are incremental — only new or changed files are processed.
 
 ---
 
@@ -80,7 +80,8 @@ ghcp-usage/
 │   ├── db.py               # SQLite schema and connection management
 │   ├── pricing.py          # Per-model API cost estimates
 │   ├── quota.py            # Monthly premium request quota tracking
-│   └── settings.py         # Persistent user settings (~/.ghcp-usage/settings.json)
+│   ├── settings.py         # Persistent user settings (~/.ghcp-usage/settings.json)
+│   └── watcher.py          # File-system watcher for near-real-time log detection
 ├── vscode-extension/
 │   ├── src/extension.ts    # VS Code extension - spawns Python dashboard, opens WebView
 │   ├── package.json        # Extension manifest (commands, settings, icon)
@@ -95,17 +96,16 @@ Database: `~/.ghcp-usage/usage.db` (auto-created on first scan).
 
 ---
 
-## Data Sources
+## Data Refresh
 
-The dashboard can read usage data from two sources, configurable in the **Settings** panel under **Data Source**:
+The scanner runs automatically on startup and re-scans every 30 seconds (configurable in Settings). It also uses a **file-system watcher** to detect new JSONL log entries within 1–3 seconds of each Copilot response — so the dashboard stays current without waiting for the full interval.
 
-| Source | When to use |
-|--------|-------------|
-| **JSONL logs** (default) | VS Code writes structured log files for every chat session. This works everywhere — local and Remote SSH — and covers all historical data. No extra setup. |
-| **Proxy** (optional) | A local mitmproxy intercept that captures Copilot API calls in real time, before VS Code flushes logs. Useful if logs are delayed or unavailable. Requires mitmproxy installed and the proxy script running separately. **Local VS Code only** — does not work over Remote SSH. |
-| **Both** | Combines both sources. Deduplication ensures no double-counting. |
+The **Data Source** setting in the Settings panel controls which sessions are shown:
 
-For most users, **JSONL logs** is all you need. The proxy mode is an advanced option for users who need real-time capture or whose log files are missing.
+| Value | Shows |
+|-------|-------|
+| **All sessions** (default) | Everything in the database |
+| **JSONL logs only** | Excludes any sessions captured by external tools |
 
 ---
 
@@ -127,7 +127,7 @@ A `.vsix` extension is available for running the dashboard directly inside VS Co
 
 **Install:**
 ```powershell
-code --install-extension ghcp-usage-dashboard-0.1.0.vsix --force
+code --install-extension ghcp-usage-dashboard-0.2.0.vsix --force
 ```
 
 **Commands** (Command Palette `Ctrl+Shift+P`):
