@@ -41,6 +41,7 @@ GitHub Copilot writes telemetry and log data locally during operation. This tool
 - **SQLite Database**: Stores completions, chat turns, agent interactions, models, tokens, and project context.
 - **CLI Commands**: `scan`, `today`, `stats`, `dashboard` — same ergonomics as claude-usage.
 - **Web Dashboard**: Single-page HTML/JS app served on localhost with Chart.js charts, model filters, date-range selectors, sortable tables, and CSV export.
+- **VS Code Extension**: Optional `.vsix` that wraps the Python CLI — launch and view the dashboard directly inside VS Code without a terminal. Works on Remote SSH.
 - **GitHub API Integration** (optional): Pull org-level Copilot usage metrics via `GET /orgs/{org}/copilot/usage` for team/enterprise views.
 - **Multi-Model Tracking**: Tracks usage across GPT-4o, GPT-4o-mini, Claude Sonnet 4, Gemini 2.5, o1, o3, and other models Copilot routes to.
 

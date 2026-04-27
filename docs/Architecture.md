@@ -12,7 +12,14 @@ The system is a single-process Python application with no external service depen
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Developer Machine                         │
 │                                                                  │
-│  ┌──────────────┐    ┌──────────────┐    ┌───────────────────┐  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │             VS Code Extension (optional layer)             │  │
+│  │  ghcp-usage-dashboard.vsix                                 │  │
+│  │  extension.ts → spawns python cli.py dashboard             │  │
+│  │  Opens WebView panel (iframe to localhost:PORT)            │  │
+│  └───────────────────┬───────────────────────────────────────┘  │
+│                      │ spawns                                    │
+│  ┌──────────────┐    ▼──────────────┐    ┌───────────────────┐  │
 │  │  VS Code +   │    │   scanner.py │    │   dashboard.py    │  │
 │  │  Copilot Ext │───▶│              │───▶│                   │  │
 │  │  (log files) │    │  Parse JSONL │    │  HTTP Server      │  │
@@ -24,8 +31,7 @@ The system is a single-process Python application with no external service depen
 │  └──────────────┘           │                     │              │
 │                      ┌──────▼─────────────────────▼──────┐      │
 │                      │         usage.db (SQLite)          │      │
-│                      │  sessions | completions | turns    │      │
-│                      │  agent_actions | processed_files   │      │
+│                      │  sessions | turns | processed_files│      │
 │                      └───────────────────────────────────┘      │
 │                                                                  │
 │  ┌──────────────┐                                               │
@@ -40,6 +46,7 @@ The system is a single-process Python application with no external service depen
 
 | Component | File | Responsibility |
 |-----------|------|---------------|
+| **VS Code Extension** | `vscode-extension/src/extension.ts` | Optional entry point. Spawns `cli.py dashboard` as a child process, opens dashboard in a WebView panel. Ships as a self-contained `.vsix`. |
 | **Scanner** | `scanner.py` | Discover, parse, and deduplicate Copilot log files. Insert/update records in SQLite. |
 | **Dashboard** | `dashboard.py` | Serve HTTP API (`/api/data`, `/api/rescan`) and the single-page HTML/JS dashboard. |
 | **CLI** | `cli.py` | Entry point. Route commands (`scan`, `today`, `stats`, `dashboard`). Format terminal output. |

@@ -1,0 +1,70 @@
+{
+  "name": "ghcp-usage-dashboard",
+  "displayName": "GHCP Usage Dashboard",
+  "description": "Open your GitHub Copilot usage dashboard directly from VS Code.",
+  "version": "0.1.0",
+  "icon": "icon.png",
+  "publisher": "shiva-sinha",
+  "author": "Shiva",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://code.siemens.com/shiva.sinha/ghcp-usage"
+  },
+  "extensionKind": [
+    "ui"
+  ],
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "ghcpUsage.openDashboard",
+        "title": "GHCP: Open Usage Dashboard"
+      },
+      {
+        "command": "ghcpUsage.stopDashboard",
+        "title": "GHCP: Stop Dashboard"
+      }
+    ],
+    "configuration": {
+      "title": "GHCP Usage Dashboard",
+      "properties": {
+        "ghcpUsage.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the Python 3.8+ executable. Leave empty to use the system PATH."
+        },
+        "ghcpUsage.port": {
+          "type": "integer",
+          "default": 8080,
+          "minimum": 1024,
+          "maximum": 65535,
+          "description": "Port for the local dashboard HTTP server (1024–65535)."
+        },
+        "ghcpUsage.autoOpen": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically open the dashboard when VS Code starts."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "robocopy ..\\src resources\\src *.py /IS & tsc -p ./",
+    "compile": "tsc -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.9.1",
+    "typescript": "^5.0.0"
+  }
+}

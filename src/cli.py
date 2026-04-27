@@ -267,6 +267,10 @@ def cmd_stats(args):
 
 def cmd_dashboard(args):
     """Implements: python src/cli.py dashboard"""
+    # If --port is given, propagate it via the PORT env var that dashboard.run() reads.
+    port = getattr(args, "port", None)
+    if port is not None:
+        os.environ["PORT"] = str(port)
     # Initial JSONL scan so dashboard opens with fresh data
     log_dir = _scanner.get_default_log_dir()
     if log_dir and log_dir.exists():
@@ -328,6 +332,13 @@ def _build_parser():
         "--logs-dir",
         metavar="PATH",
         help="Path to VS Code workspaceStorage directory (default: auto-detect)",
+    )
+    p_dash.add_argument(
+        "--port",
+        metavar="PORT",
+        type=int,
+        default=None,
+        help="Port for the dashboard HTTP server (default: 8080 or PORT env var)",
     )
     p_dash.set_defaults(func=cmd_dashboard)
 
