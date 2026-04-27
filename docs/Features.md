@@ -172,7 +172,36 @@ Estimates API-equivalent costs based on token usage and model pricing tables. He
 
 ## Advanced Features
 
-### Feature 1: GitHub API Integration (v0.2)
+### Feature 1: VS Code Extension
+
+#### Description
+A VS Code extension (`ghcp-usage-dashboard`) that wraps the Python CLI. Allows launching the dashboard directly from VS Code without a terminal. Ships as a self-contained `.vsix` file.
+
+#### Capabilities
+- `GHCP: Open Usage Dashboard` command — spawns `python src/cli.py dashboard` as a child process, polls until ready, then opens the dashboard in a VS Code WebView panel
+- `GHCP: Stop Dashboard` command — kills the Python process
+- `extensionKind: ["ui"]` — forces local execution even on Remote SSH connections
+- Configurable Python path, port, and auto-open on startup via VS Code settings
+- Bundles Python source files inside the `.vsix` — no separate clone or `git` required
+
+#### VS Code Settings
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `ghcpUsage.pythonPath` | `` | Path to Python 3.8+ executable. Leave empty to use system PATH |
+| `ghcpUsage.port` | `8080` | Dashboard HTTP server port (1024–65535) |
+| `ghcpUsage.autoOpen` | `false` | Automatically open dashboard when VS Code starts |
+
+#### Limitations / Known Issues
+- Requires Python 3.8+ to be installed separately (not bundled in the `.vsix`)
+- WebView panel embeds the dashboard in an iframe — some browser-only features (e.g. CSV export triggering a download) may behave differently
+
+#### Related Features
+- CLI Interface (the extension invokes `cli.py dashboard`)
+- All dashboard features are available via the extension
+
+---
+
+### Feature 2: GitHub API Integration (v0.2)
 - Pull org-level Copilot usage metrics via `GET /orgs/{org}/copilot/usage`
 - Requires GitHub PAT with `copilot` scope
 - Stores API data alongside local log data in the same SQLite database

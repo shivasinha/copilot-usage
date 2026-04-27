@@ -1,5 +1,0 @@
-{
-  "http.proxy": "http://127.0.0.1:18080",
-  "http.proxyStrictSSL": false,
-  "http.noProxy": "localhost,127.0.0.1"
-}

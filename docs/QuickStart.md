@@ -16,12 +16,24 @@ A local dashboard for tracking your VS Code GitHub Copilot usage — chat sessio
 
 ## Installation
 
+### Option A — VS Code Extension (recommended)
+
+Install the `.vsix` file directly:
+
+```
+code --install-extension ghcp-usage-dashboard-0.1.0.vsix --force
+```
+
+Then use the Command Palette: `GHCP: Open Usage Dashboard`.
+
+### Option B — Python CLI (no VS Code required)
+
 ```bash
 git clone <repo-url>
 cd ghcp-usage
 ```
 
-That's it. No build step, no virtual environment, no dependencies.
+No build step, no virtual environment, no dependencies.
 
 ---
 

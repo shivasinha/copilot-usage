@@ -1,13 +1,20 @@
+# Python
 __pycache__/
 *.py[cod]
+.env
+
+# Data & logs
 *.db
 *.db-shm
 *.db-wal
-.env
 *.log
+*.jsonl
 
-# Machine-specific proxy setup — not part of the repo
-proxy_poc.py
-proxy_captures.jsonl
-setup-proxy-global.ps1
-start-proxy.ps1
+# VS Code extension — build artifacts
+vscode-extension/out/
+vscode-extension/resources/src/
+vscode-extension/*.vsix
+vscode-extension/node_modules/
+
+# Temp / generated assets
+assets/favicon_datauri.txt
