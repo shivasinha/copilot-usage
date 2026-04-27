@@ -53,13 +53,13 @@ python src/cli.py scan --logs-dir /path/to/logs   # Custom log directory
 - **Cost by model table** - turns, tokens, estimated API cost
 - **Recent sessions table** - sortable, shows project, model, last active time (local timezone)
 - **CSV export** - filtered session and aggregate data
-- **Settings panel** (âš™ gear icon) - configure refresh interval, quota limit, data source, price overrides
+- **Settings panel** (⚙ gear icon) - configure refresh interval, quota limit, data source, price overrides
 
 ---
 
 ## Settings
 
-Click the **âš™** button in the top-right of the dashboard. Settings are saved to `~/.ghcp-usage/settings.json`.
+Click the **⚙** button in the top-right of the dashboard. Settings are saved to `~/.ghcp-usage/settings.json`.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
@@ -73,22 +73,22 @@ Click the **âš™** button in the top-right of the dashboard. Settings are sav
 
 ```
 ghcp-usage/
-â”œâ”€â”€ src/
-â”‚   â”œâ”€â”€ cli.py              # Entry point - scan, today, stats, dashboard commands
-â”‚   â”œâ”€â”€ scanner.py          # VS Code JSONL log discovery and parsing
-â”‚   â”œâ”€â”€ dashboard.py        # HTTP server + embedded single-page dashboard
-â”‚   â”œâ”€â”€ db.py               # SQLite schema and connection management
-â”‚   â”œâ”€â”€ pricing.py          # Per-model API cost estimates
-â”‚   â”œâ”€â”€ quota.py            # Monthly premium request quota tracking
-â”‚   â””â”€â”€ settings.py         # Persistent user settings (~/.ghcp-usage/settings.json)
-â”œâ”€â”€ vscode-extension/
-â”‚   â”œâ”€â”€ src/extension.ts    # VS Code extension - spawns Python dashboard, opens WebView
-â”‚   â”œâ”€â”€ package.json        # Extension manifest (commands, settings, icon)
-â”‚   â””â”€â”€ icon.png            # Extension icon
-â”œâ”€â”€ assets/                 # SVG/PNG source assets
-â”œâ”€â”€ docs/                   # Product requirements and architecture docs
-â”œâ”€â”€ .github/                # Copilot agents and instructions
-â””â”€â”€ Readme.md
+├── src/
+│   ├── cli.py              # Entry point - scan, today, stats, dashboard commands
+│   ├── scanner.py          # VS Code JSONL log discovery and parsing
+│   ├── dashboard.py        # HTTP server + embedded single-page dashboard
+│   ├── db.py               # SQLite schema and connection management
+│   ├── pricing.py          # Per-model API cost estimates
+│   ├── quota.py            # Monthly premium request quota tracking
+│   └── settings.py         # Persistent user settings (~/.ghcp-usage/settings.json)
+├── vscode-extension/
+│   ├── src/extension.ts    # VS Code extension - spawns Python dashboard, opens WebView
+│   ├── package.json        # Extension manifest (commands, settings, icon)
+│   └── icon.png            # Extension icon
+├── assets/                 # SVG/PNG source assets
+├── docs/                   # Product requirements and architecture docs
+├── .github/                # Copilot agents and instructions
+└── Readme.md
 ```
 
 Database: `~/.ghcp-usage/usage.db` (auto-created on first scan).
