@@ -1,93 +1,165 @@
-# ghcp-usage
+﻿# GHCP Usage Dashboard
 
+A local, privacy-first dashboard for tracking your **VS Code GitHub Copilot** usage i.e., chat sessions, token counts, model breakdowns, premium request quota, and estimated costs.
 
+No `pip install`. No cloud sync. No telemetry. Everything stays on your machine.
 
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://code.siemens.com/shiva.sinha/ghcp-usage.git
-git branch -M main
-git push -uf origin main
+```bash
+git clone <repo-url>
+cd ghcp-usage
+python src/cli.py dashboard
 ```
 
-## Integrate with your tools
+Opens your browser at `http://localhost:8080`.
 
-* [Set up project integrations](https://code.siemens.com/shiva.sinha/ghcp-usage/-/settings/integrations)
+---
 
-## Collaborate with your team
+## How It Works
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+The scanner reads VS Code's local Copilot log files (`workspaceStorage/<id>/chatSessions/*.jsonl`), parses each chat turn, and stores results in a local SQLite database. The dashboard is served on `localhost` and reads from that database.
 
-## Test and Deploy
+The scanner runs automatically on startup and re-runs every 30 seconds (configurable). Re-runs are incremental - only new or changed files are processed.
 
-Use the built-in continuous integration in GitLab.
+---
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+## Requirements
 
-***
+- **Python 3.8+** - no pip packages required
+- **VS Code** with GitHub Copilot extension installed and active
+- A web browser
 
-# Editing this README
+---
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+## CLI Commands
 
-## Suggestions for a good README
+```bash
+python src/cli.py dashboard        # Scan logs + open browser dashboard
+python src/cli.py scan             # Incremental log scan only
+python src/cli.py today            # Today's usage by model (terminal)
+python src/cli.py stats            # All-time aggregates by model (terminal)
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+python src/cli.py scan --reset     # Delete DB and re-scan from scratch
+python src/cli.py scan --logs-dir /path/to/logs   # Custom log directory
+```
 
-## Name
-Choose a self-explaining name for your project.
+---
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+## Dashboard Features
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+- **Stat cards** - sessions, turns, premium requests, input/output tokens, estimated cost
+- **Date range / Monthly toggle** - 7d / 30d / 90d / All Time or month-by-month navigation
+- **Model filter** - multi-select checkboxes
+- **Daily turns chart** - stacked bar by model (local timezone)
+- **Cost by model table** - turns, tokens, estimated API cost
+- **Recent sessions table** - sortable, shows project, model, last active time (local timezone)
+- **CSV export** - filtered session and aggregate data
+- **Settings panel** (âš™ gear icon) - configure refresh interval, quota limit, data source, price overrides
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+---
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+## Settings
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+Click the **âš™** button in the top-right of the dashboard. Settings are saved to `~/.ghcp-usage/settings.json`.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Data Refresh Interval | 30s | UI auto-refresh + background scan frequency |
+| Monthly Premium Request Limit | 100 | Quota bar percentage base |
+| Price Overrides | - | Per-model price overrides in JSON (`{"claude-opus": [15.0, 75.0]}`) |
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+---
+
+## Project Structure
+
+```
+ghcp-usage/
+â”œâ”€â”€ src/
+â”‚   â”œâ”€â”€ cli.py              # Entry point - scan, today, stats, dashboard commands
+â”‚   â”œâ”€â”€ scanner.py          # VS Code JSONL log discovery and parsing
+â”‚   â”œâ”€â”€ dashboard.py        # HTTP server + embedded single-page dashboard
+â”‚   â”œâ”€â”€ db.py               # SQLite schema and connection management
+â”‚   â”œâ”€â”€ pricing.py          # Per-model API cost estimates
+â”‚   â”œâ”€â”€ quota.py            # Monthly premium request quota tracking
+â”‚   â””â”€â”€ settings.py         # Persistent user settings (~/.ghcp-usage/settings.json)
+â”œâ”€â”€ vscode-extension/
+â”‚   â”œâ”€â”€ src/extension.ts    # VS Code extension - spawns Python dashboard, opens WebView
+â”‚   â”œâ”€â”€ package.json        # Extension manifest (commands, settings, icon)
+â”‚   â””â”€â”€ icon.png            # Extension icon
+â”œâ”€â”€ assets/                 # SVG/PNG source assets
+â”œâ”€â”€ docs/                   # Product requirements and architecture docs
+â”œâ”€â”€ .github/                # Copilot agents and instructions
+â””â”€â”€ Readme.md
+```
+
+Database: `~/.ghcp-usage/usage.db` (auto-created on first scan).
+
+---
+
+## Data Sources
+
+The dashboard can read usage data from two sources, configurable in the **Settings** panel under **Data Source**:
+
+| Source | When to use |
+|--------|-------------|
+| **JSONL logs** (default) | VS Code writes structured log files for every chat session. This works everywhere — local and Remote SSH — and covers all historical data. No extra setup. |
+| **Proxy** (optional) | A local mitmproxy intercept that captures Copilot API calls in real time, before VS Code flushes logs. Useful if logs are delayed or unavailable. Requires mitmproxy installed and the proxy script running separately. **Local VS Code only** — does not work over Remote SSH. |
+| **Both** | Combines both sources. Deduplication ensures no double-counting. |
+
+For most users, **JSONL logs** is all you need. The proxy mode is an advanced option for users who need real-time capture or whose log files are missing.
+
+---
+
+## Timezone
+
+All timestamps are displayed in **your local timezone** (auto-detected by the browser). Daily chart grouping uses local day boundaries.
+
+---
+
+## Privacy
+
+All data stays local. The tool reads VS Code Copilot log files and writes to a local SQLite file. No data is sent anywhere.
+
+---
+
+## VS Code Extension
+
+A `.vsix` extension is available for running the dashboard directly inside VS Code - no terminal needed.
+
+**Install:**
+```powershell
+code --install-extension ghcp-usage-dashboard-0.1.0.vsix --force
+```
+
+**Commands** (Command Palette `Ctrl+Shift+P`):
+- `GHCP: Open Usage Dashboard` - starts Python dashboard and opens it in a WebView panel
+- `GHCP: Stop Dashboard` - stops the Python process
+
+**Extension Settings:**
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `ghcpUsage.pythonPath` | `` | Path to Python 3.8+ executable. Leave empty to use system PATH |
+| `ghcpUsage.port` | `8080` | Dashboard HTTP server port |
+| `ghcpUsage.autoOpen` | `false` | Auto-open dashboard when VS Code starts |
+
+> The extension bundles all Python source files - no separate `git clone` is needed.
+> Works on Remote SSH connections (`extensionKind: ui` forces local execution).
+
+---
+
+## Building the Extension (developers)
+
+```powershell
+cd vscode-extension
+npm install --registry https://registry.npmjs.org
+.\node_modules\.bin\vsce package --allow-missing-repository --skip-license
+```
+
+Produces `ghcp-usage-dashboard-<version>.vsix`.
+
+---
 
 ## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+See `docs/Architecture.md` for system design and `docs/TechStack.md` for constraints (Python stdlib only - no new pip dependencies).
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
