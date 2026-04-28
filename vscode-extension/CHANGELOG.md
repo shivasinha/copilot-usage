@@ -6,6 +6,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.2.3] — 2026-04-28
+### Added
+- Reload Window notification on fresh install or version upgrade.
+- Python resolution now queries the VS Code Python extension's active interpreter first.
+- Windows fallback probes common Python install locations (LOCALAPPDATA, ProgramFiles, C:\Python3xx) when python is not on PATH.
+- Added `py` launcher as a candidate on Windows.
+
 ## [0.2.2] — 2026-04-28
 ### Removed
 - Proxy data source option fully removed from the Data Source dropdown and backend filtering logic.
