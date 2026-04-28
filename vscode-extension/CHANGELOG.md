@@ -6,6 +6,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.2.5] — 2026-04-28
+### Changed
+- Renamed Command Palette commands to `GHCP Usage: Open Dashboard` and `GHCP Usage: Stop Dashboard`.
+- Updated repository, homepage, and bugs URLs to `github.com/shivasinha/ghcp-usage`.
+- Added `claude` keyword to extension manifest.
+
 ## [0.2.4] — 2026-04-28
 ### Changed
 - Default premium request quota limit raised from 100 to 300.
