@@ -2,10 +2,11 @@
   "name": "ghcp-usage-dashboard",
   "displayName": "GHCP Usage Dashboard",
   "description": "Open your GitHub Copilot usage dashboard directly from VS Code.",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "icon": "icon.png",
-  "publisher": "shiva-sinha",
-  "author": "Shiva",
+  "publisher": "shivasinha",
+  "author": "Shiva Sinha",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -76,8 +77,27 @@
     }
   },
   "scripts": {
+    "//": [
+      "── Enforced release workflow ──────────────────────────────────────────",
+      "1. Update CHANGELOG.md: rename [Unreleased] → [X.Y.Z] — YYYY-MM-DD,",
+      "   add a fresh [Unreleased] block, then stage the file.",
+      "2. Commit all code changes (working tree must be clean before step 3).",
+      "3. Run ONE of: npm run release:patch | release:minor | release:major",
+      "   • preversion  – blocks if working tree is dirty (git diff --exit-code)",
+      "   • version     – auto-stages CHANGELOG.md, bumps package.json, git commit + tag",
+      "   • postversion – git push + git push --tags (pushes commit and tag to GitHub)",
+      "   • release:*   – then builds the .vsix via vsce package",
+      "4. Run: vsce publish   (uploads the .vsix to the VS Code Marketplace)",
+      "───────────────────────────────────────────────────────────────────────"
+    ],
     "vscode:prepublish": "robocopy ..\\src resources\\src *.py /IS & tsc -p ./",
-    "compile": "tsc -p ./"
+    "compile": "tsc -p ./",
+    "preversion": "git diff --exit-code",
+    "version": "git add CHANGELOG.md ../CHANGELOG.md",
+    "postversion": "git push && git push --tags",
+    "release:patch": "npm version patch && vsce package",
+    "release:minor": "npm version minor && vsce package",
+    "release:major": "npm version major && vsce package"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
