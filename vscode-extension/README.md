@@ -12,15 +12,15 @@ Track your GitHub Copilot usage — token counts, model breakdown, session histo
 ## Getting Started
 
 1. Install the extension.
-2. Click the **📊 GHCP** item in the status bar, or open the Command Palette (`Ctrl+Shift+P`) and run **Copilot Usage: Open Dashboard**.
+2. Click the **📊 GHCP** item in the status bar, or open the Command Palette (`Ctrl+Shift+P`) and run **GHCP Usage: Open Dashboard**.
 3. The dashboard opens in a panel and shows your Copilot usage history.
 
 ## Commands
 
 | Command | Description |
 |---|---|
-| **Copilot Usage: Open Dashboard** | Opens (or focuses) the usage dashboard. |
-| **Copilot Usage: Stop Dashboard** | Stops the background dashboard server. |
+| **GHCP Usage: Open Dashboard** | Opens (or focuses) the usage dashboard. |
+| **GHCP Usage: Stop Dashboard** | Stops the background dashboard server. |
 
 ## Settings
 

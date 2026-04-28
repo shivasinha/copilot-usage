@@ -131,8 +131,8 @@ code --install-extension ghcp-usage-dashboard-0.2.0.vsix --force
 ```
 
 **Commands** (Command Palette `Ctrl+Shift+P`):
-- `GHCP: Open Usage Dashboard` - starts Python dashboard and opens it in a WebView panel
-- `GHCP: Stop Dashboard` - stops the Python process
+- `GHCP Usage: Open Dashboard` - starts Python dashboard and opens it in a WebView panel
+- `GHCP Usage: Stop Dashboard` - stops the Python process
 
 **Extension Settings:**
 

@@ -15,7 +15,7 @@ All notable changes to **Copilot Usage Dashboard** are documented here.
 - Output channel for diagnostic logging.
 
 ### Changed
-- Renamed commands to `Copilot Usage: Open Dashboard` and `Copilot Usage: Stop Dashboard`.
+- Renamed commands to `GHCP Usage: Open Dashboard` and `GHCP Usage: Stop Dashboard`.
 
 ## [0.1.0] — 2026-03-01
 ### Added

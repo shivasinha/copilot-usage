@@ -12,16 +12,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/shivasinha/copilot-usage"
+    "url": "https://github.com/shivasinha/ghcp-usage"
   },
-  "homepage": "https://github.com/shivasinha/copilot-usage#readme",
+  "homepage": "https://github.com/shivasinha/ghcp-usage#readme",
   "bugs": {
-    "url": "https://github.com/shivasinha/copilot-usage/issues"
+    "url": "https://github.com/shivasinha/ghcp-usage/issues"
   },
   "keywords": [
     "github-copilot",
     "copilot",
     "usage",
+    "claude",
     "dashboard",
     "analytics",
     "tokens",
@@ -46,11 +47,11 @@
     "commands": [
       {
         "command": "ghcpUsage.openDashboard",
-        "title": "Copilot Usage: Open Dashboard"
+        "title": "GHCP Usage: Open Dashboard"
       },
       {
         "command": "ghcpUsage.stopDashboard",
-        "title": "Copilot Usage: Stop Dashboard"
+        "title": "GHCP Usage: Stop Dashboard"
       }
     ],
     "configuration": {
