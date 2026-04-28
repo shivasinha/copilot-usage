@@ -11,7 +11,25 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://code.siemens.com/shiva.sinha/ghcp-usage"
+    "url": "https://github.com/shivasinha/copilot-usage"
+  },
+  "homepage": "https://github.com/shivasinha/copilot-usage#readme",
+  "bugs": {
+    "url": "https://github.com/shivasinha/copilot-usage/issues"
+  },
+  "keywords": [
+    "github-copilot",
+    "copilot",
+    "usage",
+    "dashboard",
+    "analytics",
+    "tokens",
+    "cost",
+    "quota"
+  ],
+  "galleryBanner": {
+    "color": "#1e1e2e",
+    "theme": "dark"
   },
   "extensionKind": [
     "ui"
@@ -27,11 +45,11 @@
     "commands": [
       {
         "command": "ghcpUsage.openDashboard",
-        "title": "GHCP: Open Usage Dashboard"
+        "title": "Copilot Usage: Open Dashboard"
       },
       {
         "command": "ghcpUsage.stopDashboard",
-        "title": "GHCP: Stop Dashboard"
+        "title": "Copilot Usage: Stop Dashboard"
       }
     ],
     "configuration": {
