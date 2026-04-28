@@ -6,4 +6,4 @@ tsconfig.json
 .gitignore
 .npmrc
 .vscode/**
-*.map
+**/*.map

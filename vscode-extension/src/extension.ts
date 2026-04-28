@@ -55,6 +55,22 @@ export function activate(context: vscode.ExtensionContext): void {
     if (cfg.autoOpen) {
         setTimeout(() => openDashboard(context, true), 2000);
     }
+
+    // Prompt reload on fresh install or version upgrade
+    const ext = vscode.extensions.getExtension('shiva-sinha.ghcp-usage-dashboard');
+    const currentVersion = ext?.packageJSON?.version as string | undefined;
+    const storedVersion = context.globalState.get<string>('installedVersion');
+    if (currentVersion && currentVersion !== storedVersion) {
+        context.globalState.update('installedVersion', currentVersion);
+        vscode.window.showInformationMessage(
+            `Copilot Usage Dashboard ${currentVersion} installed. Reload window to activate.`,
+            'Reload Window'
+        ).then(selection => {
+            if (selection === 'Reload Window') {
+                vscode.commands.executeCommand('workbench.action.reloadWindow');
+            }
+        });
+    }
 }
 
 export function deactivate(): void {
@@ -408,22 +424,69 @@ async function resolvePython(customPath: string): Promise<string | undefined> {
     if (customPath) {
         return await checkPythonExe(customPath) ? customPath : undefined;
     }
-    // US-12: prefer python3 on Unix, python on Windows
+
+    // 1. Ask the VS Code Python extension for its active interpreter (most reliable)
+    const pyExt = vscode.extensions.getExtension('ms-python.python');
+    if (pyExt) {
+        if (!pyExt.isActive) {
+            await pyExt.activate();
+        }
+        try {
+            const execDetails = pyExt.exports?.settings?.getExecutionDetails?.();
+            const interpreterPath: string | undefined = execDetails?.execCommand?.[0];
+            if (interpreterPath && await checkPythonExe(interpreterPath)) {
+                return interpreterPath;
+            }
+        } catch {
+            // ms-python API unavailable — fall through
+        }
+    }
+
+    // 2. Try common names via shell so the user's full PATH is inherited
     const candidates = process.platform === 'win32'
-        ? ['python', 'python3']
+        ? ['python', 'python3', 'py']
         : ['python3', 'python'];
     for (const exe of candidates) {
         if (await checkPythonExe(exe)) {
             return exe;
         }
     }
+
+    // 3. Windows: probe common install locations that may not be on PATH
+    if (process.platform === 'win32') {
+        const localApp = process.env.LOCALAPPDATA ?? '';
+        const programFiles = process.env.ProgramFiles ?? 'C:\\Program Files';
+        const programFilesX86 = process.env['ProgramFiles(x86)'] ?? 'C:\\Program Files (x86)';
+        const winPaths = [
+            path.join(localApp, 'Programs', 'Python'),
+            path.join(programFiles, 'Python'),
+            path.join(programFilesX86, 'Python'),
+            'C:\\Python312', 'C:\\Python311', 'C:\\Python310', 'C:\\Python39', 'C:\\Python38',
+        ];
+        for (const base of winPaths) {
+            if (!fs.existsSync(base)) { continue; }
+            for (const entry of fs.readdirSync(base).sort().reverse()) {
+                const candidate = path.join(base, entry, 'python.exe');
+                if (fs.existsSync(candidate) && await checkPythonExe(candidate)) {
+                    return candidate;
+                }
+            }
+            // flat layout (e.g. C:\Python311\python.exe)
+            const flat = path.join(base, 'python.exe');
+            if (fs.existsSync(flat) && await checkPythonExe(flat)) {
+                return flat;
+            }
+        }
+    }
+
     return undefined;
 }
 
 function checkPythonExe(exe: string): Promise<boolean> {
     return new Promise((resolve) => {
-        // Security: exe is either a trusted config value or a fixed constant — no user input embedded in shell
-        const proc = cp.spawn(exe, ['--version'], { shell: false });
+        // Use shell:true so the full user PATH (conda, pyenv, winget installs) is inherited
+        // Security: exe is either a trusted config value, a fixed constant, or a path from ms-python — no raw user input embedded
+        const proc = cp.spawn(exe, ['--version'], { shell: true });
         let output = '';
         proc.stdout?.on('data', (d: Buffer) => { output += d.toString(); });
         proc.stderr?.on('data', (d: Buffer) => { output += d.toString(); });

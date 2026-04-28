@@ -2,16 +2,35 @@
   "name": "ghcp-usage-dashboard",
   "displayName": "GHCP Usage Dashboard",
   "description": "Open your GitHub Copilot usage dashboard directly from VS Code.",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "icon": "icon.png",
-  "publisher": "shiva-sinha",
-  "author": "Shiva",
+  "publisher": "shivasinha",
+  "author": "Shiva Sinha",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://code.siemens.com/shiva.sinha/ghcp-usage"
+    "url": "https://github.com/shivasinha/copilot-usage"
+  },
+  "homepage": "https://github.com/shivasinha/copilot-usage#readme",
+  "bugs": {
+    "url": "https://github.com/shivasinha/copilot-usage/issues"
+  },
+  "keywords": [
+    "github-copilot",
+    "copilot",
+    "usage",
+    "dashboard",
+    "analytics",
+    "tokens",
+    "cost",
+    "quota"
+  ],
+  "galleryBanner": {
+    "color": "#1e1e2e",
+    "theme": "dark"
   },
   "extensionKind": [
     "ui"
@@ -27,11 +46,11 @@
     "commands": [
       {
         "command": "ghcpUsage.openDashboard",
-        "title": "GHCP: Open Usage Dashboard"
+        "title": "Copilot Usage: Open Dashboard"
       },
       {
         "command": "ghcpUsage.stopDashboard",
-        "title": "GHCP: Stop Dashboard"
+        "title": "Copilot Usage: Stop Dashboard"
       }
     ],
     "configuration": {
@@ -58,8 +77,27 @@
     }
   },
   "scripts": {
+    "//": [
+      "── Enforced release workflow ──────────────────────────────────────────",
+      "1. Update CHANGELOG.md: rename [Unreleased] → [X.Y.Z] — YYYY-MM-DD,",
+      "   add a fresh [Unreleased] block, then stage the file.",
+      "2. Commit all code changes (working tree must be clean before step 3).",
+      "3. Run ONE of: npm run release:patch | release:minor | release:major",
+      "   • preversion  – blocks if working tree is dirty (git diff --exit-code)",
+      "   • version     – auto-stages CHANGELOG.md, bumps package.json, git commit + tag",
+      "   • postversion – git push + git push --tags (pushes commit and tag to GitHub)",
+      "   • release:*   – then builds the .vsix via vsce package",
+      "4. Run: vsce publish   (uploads the .vsix to the VS Code Marketplace)",
+      "───────────────────────────────────────────────────────────────────────"
+    ],
     "vscode:prepublish": "robocopy ..\\src resources\\src *.py /IS & tsc -p ./",
-    "compile": "tsc -p ./"
+    "compile": "tsc -p ./",
+    "preversion": "git diff --exit-code",
+    "version": "git add CHANGELOG.md ../CHANGELOG.md",
+    "postversion": "git push && git push --tags",
+    "release:patch": "npm version patch && vsce package",
+    "release:minor": "npm version minor && vsce package",
+    "release:major": "npm version major && vsce package"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
