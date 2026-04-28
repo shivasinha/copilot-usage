@@ -12,7 +12,7 @@ Configure the monthly limit by setting the GHCP_QUOTA environment variable
 import os
 from datetime import datetime
 
-_DEFAULT_QUOTA = 100
+_DEFAULT_QUOTA = 300
 
 
 def get_quota_limit():

@@ -2,7 +2,7 @@
 
 Settings:
   refresh_interval_seconds  — how often UI auto-refreshes AND JSONL background scan runs (default 30)
-  quota_limit               — monthly premium request limit shown in the quota bar (default 100)
+  quota_limit               — monthly premium request limit shown in the quota bar (default 300)
 """
 
 import json
@@ -13,7 +13,7 @@ _SETTINGS_PATH = Path(os.path.expanduser("~/.ghcp-usage/settings.json"))
 
 DEFAULTS = {
     "refresh_interval_seconds": 30,
-    "quota_limit": 100,
+    "quota_limit": 300,
     "data_source": "both",   # "both" | "jsonl"
     "pricing_source_url": "https://platform.openai.com/docs/pricing",
     "price_overrides": {},   # {"model-key": [input_$/MTok, output_$/MTok]}

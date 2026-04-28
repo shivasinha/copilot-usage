@@ -64,7 +64,7 @@ Click the **⚙** button in the top-right of the dashboard. Settings are saved t
 | Setting | Default | Description |
 |---------|---------|-------------|
 | Data Refresh Interval | 30s | UI auto-refresh + background scan frequency |
-| Monthly Premium Request Limit | 100 | Quota bar percentage base |
+| Monthly Premium Request Limit | 300 | Quota bar percentage base |
 | Price Overrides | - | Per-model price overrides in JSON (`{"claude-opus": [15.0, 75.0]}`) |
 
 ---
