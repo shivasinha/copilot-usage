@@ -6,6 +6,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.2.4] — 2026-04-28
+### Changed
+- Default premium request quota limit raised from 100 to 300.
+
 ## [0.2.3] — 2026-04-28
 ### Added
 - Reload Window notification on fresh install or version upgrade.
