@@ -6,6 +6,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.2.7] — 2026-04-29
+### Fixed
+- Scanner now discovers session files with the `.json` extension used by VS Code ≥ 1.100, in addition to the legacy `.jsonl` extension. This was the root cause of dashboards showing 0 data on machines running recent VS Code versions.
+
 ## [0.2.6] — 2026-04-29
 ### Fixed
 - Port check in Python now uses a bind test instead of a connect test, preventing false "port in use" errors when a previous process was still releasing the socket (caused repeated exit code 1 on some machines).

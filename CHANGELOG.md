@@ -2,6 +2,10 @@
 
 All notable changes to **Copilot Usage Dashboard** are documented here.
 
+## [0.2.7] — 2026-04-29
+### Fixed
+- Scanner now discovers session files with the `.json` extension used by VS Code ≥ 1.100, in addition to the legacy `.jsonl` extension. This was the root cause of dashboards showing 0 data on machines running recent VS Code versions.
+
 ## [0.2.1] — 2026-04-28
 ### Fixed
 - Added missing models to the pricing table.

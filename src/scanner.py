@@ -126,10 +126,11 @@ def build_workspace_map(storage_root):
 # ---------------------------------------------------------------------------
 
 def discover_log_files(storage_root):
-    """Return a sorted list of chatSession JSONL files under *storage_root*.
+    """Return a sorted list of chatSession files under *storage_root*.
 
     Looks for files matching:
-      <storage_root>/<workspace_id>/chatSessions/*.jsonl
+      <storage_root>/<workspace_id>/chatSessions/*.jsonl  (VS Code < ~1.100)
+      <storage_root>/<workspace_id>/chatSessions/*.json   (VS Code >= ~1.100)
     """
     storage_root = Path(storage_root)
     files = []
@@ -139,9 +140,10 @@ def discover_log_files(storage_root):
         chat_sessions = ws_dir / "chatSessions"
         if not chat_sessions.is_dir():
             continue
-        for f in chat_sessions.glob("*.jsonl"):
-            files.append(f)
-    return sorted(files)
+        for pattern in ("*.jsonl", "*.json"):
+            for f in chat_sessions.glob(pattern):
+                files.append(f)
+    return sorted(set(files))
 
 
 # ---------------------------------------------------------------------------
