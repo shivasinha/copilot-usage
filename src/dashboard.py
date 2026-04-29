@@ -1239,13 +1239,16 @@ class _Handler(BaseHTTPRequestHandler):
 # ---------------------------------------------------------------------------
 
 def _is_port_in_use(host, port):
+    # Use a bind attempt — same test that HTTPServer will perform — to avoid
+    # false positives from the connect-based check (a dying process may still
+    # briefly accept connections while releasing the port).
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.settimeout(0.5)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
-            s.connect((host, port))
-            return True
-        except (ConnectionRefusedError, OSError):
+            s.bind((host, port))
             return False
+        except OSError:
+            return True
 
 
 def run(db_path=None):

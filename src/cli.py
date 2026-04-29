@@ -273,8 +273,16 @@ def cmd_dashboard(args):
         os.environ["PORT"] = str(port)
     # Initial JSONL scan so dashboard opens with fresh data
     log_dir = _scanner.get_default_log_dir()
-    if log_dir and log_dir.exists():
+    if log_dir is None:
+        print("Warning: could not resolve VS Code workspaceStorage path (APPDATA not set?).", file=sys.stderr)
+    elif not log_dir.exists():
+        print("Warning: workspaceStorage directory not found: {}".format(log_dir), file=sys.stderr)
+        print("  → Dashboard will show no data until VS Code Copilot Chat logs appear at that path.", file=sys.stderr)
+    else:
+        print("Scanning log directory: {}".format(log_dir))
         try:
+            files = _scanner.discover_log_files(log_dir)
+            print("  Found {} JSONL session file(s).".format(len(files)))
             result = _scanner.scan(log_dir)
             print("Initial scan: {} new records from JSONL logs.".format(result.get("new_records", 0)))
         except Exception as exc:

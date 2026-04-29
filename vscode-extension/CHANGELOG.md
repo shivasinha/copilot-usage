@@ -6,6 +6,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.2.6] — 2026-04-29
+### Fixed
+- Port check in Python now uses a bind test instead of a connect test, preventing false "port in use" errors when a previous process was still releasing the socket (caused repeated exit code 1 on some machines).
+
+### Improved
+- Initial scan now logs the resolved `workspaceStorage` path and the number of JSONL session files found to the GHCP output channel, making it easier to diagnose a "0 data" dashboard.
+
 ## [0.2.5] — 2026-04-28
 ### Changed
 - Renamed Command Palette commands to `GHCP Usage: Open Dashboard` and `GHCP Usage: Stop Dashboard`.
